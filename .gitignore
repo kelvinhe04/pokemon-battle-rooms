@@ -1,0 +1,14 @@
+node_modules
+dist
+.output
+.vinxi
+.tanstack
+.env
+.env.local
+*.log
+.DS_Store
+mongo-data
+.claude
+**/routeTree.gen.ts
+apps/frontend/app.config.timestamp_*.js
+apps/frontend/app/

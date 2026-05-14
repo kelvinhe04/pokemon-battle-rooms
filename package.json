@@ -1,0 +1,38 @@
+{
+  "name": "pokemon-battle-rooms",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "build": "pnpm -r build",
+    "seed": "pnpm --filter backend seed",
+    "backend:dev": "pnpm --filter backend dev",
+    "frontend:dev": "pnpm --filter frontend dev"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  },
+  "pnpm": {
+    "overrides": {
+      "vite": "6.3.5",
+      "@tanstack/react-start-server": "1.120.20",
+      "@tanstack/react-start-client": "1.120.20",
+      "@tanstack/start-config": "1.120.20",
+      "@tanstack/router-generator": "1.120.20",
+      "@tanstack/router-plugin": "1.120.20",
+      "@tanstack/server-functions-plugin": "1.120.17",
+      "@tanstack/directive-functions-plugin": "1.120.17",
+      "@tanstack/react-start-plugin": "1.120.17",
+      "@tanstack/start-plugin-core": "1.120.17",
+      "@tanstack/start-server-core": "1.120.17",
+      "@tanstack/start-client-core": "1.120.17",
+      "@tanstack/router-core": "1.120.20",
+      "@tanstack/router-utils": "1.120.20",
+      "@tanstack/history": "1.120.20",
+      "@tanstack/virtual-file-routes": "1.120.20",
+      "@tanstack/start-storage-context": "1.120.17",
+      "@tanstack/start-fn-stubs": "1.120.17"
+    }
+  }
+}
