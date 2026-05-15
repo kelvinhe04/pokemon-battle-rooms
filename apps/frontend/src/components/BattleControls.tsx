@@ -16,14 +16,9 @@ export function BattleControls({ battle, myPlayerId, onMove, onSwitch, waiting }
   const active = me.team[me.activeIndex];
   const [mode, setMode] = useState<"main" | "switch">("main");
 
-  if (waiting) {
-    return (
-      <div className="card" style={{ textAlign: "center" }}>
-        <span className="muted">Esperando al rival...</span>
-      </div>
-    );
-  }
+  const forcedSwitchPlayerId = battle.forcedSwitchPlayerId ?? null;
 
+  // My active fainted → forced switch (overrides waiting)
   if (active.fainted) {
     return (
       <div className="card">
@@ -37,6 +32,23 @@ export function BattleControls({ battle, myPlayerId, onMove, onSwitch, waiting }
             )
           )}
         </div>
+      </div>
+    );
+  }
+
+  // Opponent's active fainted → wait for them to switch
+  if (forcedSwitchPlayerId && forcedSwitchPlayerId !== myPlayerId) {
+    return (
+      <div className="card" style={{ textAlign: "center" }}>
+        <span className="muted">El rival está eligiendo su siguiente Pokémon...</span>
+      </div>
+    );
+  }
+
+  if (waiting) {
+    return (
+      <div className="card" style={{ textAlign: "center" }}>
+        <span className="muted">Esperando al rival...</span>
       </div>
     );
   }

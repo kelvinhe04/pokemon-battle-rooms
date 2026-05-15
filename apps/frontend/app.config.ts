@@ -13,8 +13,17 @@ export default defineConfig({
   tsr: {
     routesDirectory: "./src/routes",
     generatedRouteTree: "./src/routeTree.gen.ts",
+    watch: false,
+    enableRouteGeneration: false,
   },
   vite: {
     plugins: [tsConfigPaths({ projects: ["./tsconfig.json"] })],
+    resolve: {
+      dedupe: ["react", "react-dom"],
+    },
+    optimizeDeps: {
+      dedupe: ["react", "react-dom"],
+      exclude: ["framer-motion"],
+    },
   },
 });

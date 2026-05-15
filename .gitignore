@@ -9,6 +9,7 @@ dist
 .DS_Store
 mongo-data
 .claude
+.playwright-mcp
 **/routeTree.gen.ts
 apps/frontend/app.config.timestamp_*.js
 apps/frontend/app/
