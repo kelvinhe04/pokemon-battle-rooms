@@ -25,5 +25,11 @@ export default defineConfig({
       dedupe: ["react", "react-dom"],
       exclude: ["framer-motion"],
     },
+    server: {
+      watch: {
+        usePolling: true,
+        interval: 500,
+      },
+    },
   },
 });
