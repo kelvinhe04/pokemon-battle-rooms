@@ -10,6 +10,7 @@ import { BattleControls } from "../components/BattleControls";
 import { BattleLog } from "../components/BattleLog";
 import { CoinFlip } from "../components/CoinFlip";
 import { Countdown } from "../components/Countdown";
+import { useGameAudio } from "../hooks/useGameAudio";
 
 export const Route = createFileRoute("/room/$code")({
   component: RoomPage,
@@ -26,6 +27,7 @@ function RoomPage() {
   const [error, setError] = useState<string | null>(null);
   const [pickedTeam, setPickedTeam] = useState<number[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
+  const audio = useGameAudio();
 
   const session = typeof window !== "undefined" ? loadSession(code) : null;
   const playerId = session?.playerId;
@@ -42,8 +44,11 @@ function RoomPage() {
       if (event === "battle:start") {
         setShowCoinFlip(true);
         api.battle(payload.battleId).then(setBattle);
-        // hide coin flip after 3.5s
-        setTimeout(() => setShowCoinFlip(false), 3500);
+        // hide coin flip after 3.5s, then start battle music
+        setTimeout(() => {
+          setShowCoinFlip(false);
+          audio.play("battle");
+        }, 3500);
       }
       if (event === "battle:turn") {
         setBattle(payload.battle);
@@ -59,6 +64,12 @@ function RoomPage() {
       if (event === "battle:end") {
         setBattle(payload.battle);
         setWaitingForOpp(false);
+        const iWinner = payload.battle?.winnerPlayerId === playerId;
+        if (iWinner) {
+          audio.play("victory");
+        } else {
+          audio.stop();
+        }
       }
     });
     wsRef.current = ws;
@@ -74,6 +85,16 @@ function RoomPage() {
       api.battle(room.battleId).then(setBattle);
     }
   }, [room?.battleId]);
+
+  // Start battle music when reconnecting mid-battle (skip if coin flip still showing)
+  useEffect(() => {
+    if (!showCoinFlip && room?.status === "in_battle" && battle && battle.status !== "finished" && audio.currentTrack === "none") {
+      audio.play("battle");
+    }
+    if (battle?.status === "finished") {
+      if (audio.currentTrack === "battle") audio.stop();
+    }
+  }, [room?.status, battle?.status, showCoinFlip]);
 
   if (error) {
     return (
@@ -270,6 +291,7 @@ function RoomPage() {
     return (
       <div className="container">
         <Header code={code} phase={`Turno ${battle.turn}`} />
+        <MuteButton muted={audio.muted} onToggle={audio.toggleMute} />
 
         <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "1.5rem", marginTop: "1rem" }}>
           <div>
@@ -307,12 +329,30 @@ function RoomPage() {
 
           <div>
             <div className="card" style={{ marginBottom: "1rem" }}>
-              <h3 style={{ marginBottom: "0.75rem" }}>Tu equipo</h3>
-              <TeamMini player={battle.players.find((p:any)=>p.id===playerId)} />
+              <h3 style={{ marginBottom: "0.75rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                {!finished && !waitingForOpp ? "⚡ Switchear Pokémon" : "Tu equipo"}
+                {!finished && !waitingForOpp && (
+                  <span style={{ fontSize: "0.7rem", color: "var(--muted)", fontWeight: 400 }}>
+                    (click para cambiar)
+                  </span>
+                )}
+              </h3>
+              <TeamMini
+                player={battle.players.find((p:any)=>p.id===playerId)}
+                canSwitch={!finished && !waitingForOpp}
+                onSwitch={(i) => {
+                  setWaitingForOpp(true);
+                  api.battleAction(String(battle._id), playerId!, { type: "switch", targetIndex: i })
+                    .catch((e) => { setError(e.message); setWaitingForOpp(false); });
+                }}
+              />
             </div>
             <div className="card" style={{ marginBottom: "1rem" }}>
               <h3 style={{ marginBottom: "0.75rem" }}>Equipo rival</h3>
-              <TeamMini player={battle.players.find((p:any)=>p.id!==playerId)} hideHpNumbers />
+              <TeamMini
+                player={battle.players.find((p:any)=>p.id!==playerId)}
+                isRival
+              />
             </div>
             <div className="card">
               <h3 style={{ marginBottom: "0.75rem" }}>Log</h3>
@@ -371,35 +411,117 @@ function PlayerSlot({ p, you }: { p: any; you?: boolean }) {
   );
 }
 
-function TeamMini({ player, hideHpNumbers }: { player: any; hideHpNumbers?: boolean }) {
+function MuteButton({ muted, onToggle }: { muted: boolean; onToggle: () => void }) {
+  return (
+    <button
+      onClick={onToggle}
+      title={muted ? "Activar música" : "Silenciar música"}
+      style={{
+        position: "fixed",
+        bottom: 24,
+        left: 24,
+        width: 48,
+        height: 48,
+        borderRadius: "50%",
+        background: muted ? "rgba(255,255,255,0.08)" : "rgba(255, 203, 5, 0.18)",
+        border: muted
+          ? "1px solid rgba(255,255,255,0.15)"
+          : "1px solid rgba(255,203,5,0.5)",
+        cursor: "pointer",
+        zIndex: 1000,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        backdropFilter: "blur(6px)",
+        transition: "background 0.2s, border 0.2s",
+        color: muted ? "var(--muted)" : "var(--accent)",
+      }}
+    >
+      <svg
+        width="22"
+        height="22"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        {muted ? (
+          <>
+            <path d="M3.63 3.63a1 1 0 0 0-1.41 1.41L7.29 10.1 7 10H4a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h3l5 5v-6.59l4.59 4.59a7 7 0 0 1-.82.54 1 1 0 1 0 .95 1.76 9 9 0 0 0 1.32-.87l1.14 1.14a1 1 0 0 0 1.41-1.41L3.63 3.63ZM17 12c0 .59-.08 1.16-.22 1.71L18.2 15.1A9 9 0 0 0 19 12 9 9 0 0 0 9.07 3.27L10.6 4.8A7 7 0 0 1 17 12Zm-5-9-2.09 2.09L12 7V3Z" />
+          </>
+        ) : (
+          <>
+            <path d="M3 10v4a1 1 0 0 0 1 1h3l5 5V4L7 9H4a1 1 0 0 0-1 1Zm14.5 2A4.5 4.5 0 0 0 15 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02ZM14 3.23v2.06a7 7 0 0 1 0 13.42v2.06A9 9 0 0 0 14 3.23Z" />
+          </>
+        )}
+      </svg>
+    </button>
+  );
+}
+
+const POKEBALL = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png";
+
+function TeamMini({
+  player,
+  isRival = false,
+  canSwitch = false,
+  onSwitch,
+}: {
+  player: any;
+  isRival?: boolean;
+  canSwitch?: boolean;
+  onSwitch?: (i: number) => void;
+}) {
   if (!player) return null;
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem" }}>
-      {player.team.map((p: any, i: number) => (
-        <div
-          key={i}
-          style={{
-            textAlign: "center",
-            padding: "0.4rem",
-            borderRadius: "0.5rem",
-            background: i === player.activeIndex ? "rgba(255,203,5,0.15)" : "rgba(0,0,0,0.2)",
-            opacity: p.fainted ? 0.4 : 1,
-            border: i === player.activeIndex ? "1px solid var(--accent)" : "1px solid transparent",
-          }}
-        >
-          <img
-            src={p.spriteFront}
-            alt={p.name}
-            style={{ width: 48, height: 48, imageRendering: "pixelated" as any }}
-          />
-          <div style={{ fontSize: "0.7rem", textTransform: "capitalize" }}>{p.name}</div>
-          {!hideHpNumbers && (
-            <div style={{ fontSize: "0.65rem", color: "var(--muted)" }}>
-              {p.currentHp}/{p.maxHp}
+      {player.team.map((p: any, i: number) => {
+        const isActive = i === player.activeIndex;
+        const clickable = !isRival && canSwitch && !isActive && !p.fainted && !!onSwitch;
+        // Rival: show pokeball unless fainted
+        const showPokeball = isRival && !p.fainted;
+
+        return (
+          <div
+            key={i}
+            onClick={() => clickable && onSwitch!(i)}
+            title={clickable ? `Cambiar a ${p.name}` : undefined}
+            className={clickable ? "team-slot-switchable" : undefined}
+            style={{
+              textAlign: "center",
+              padding: "0.4rem",
+              borderRadius: "0.5rem",
+              background: isActive ? "rgba(255,203,5,0.15)" : "rgba(0,0,0,0.2)",
+              opacity: p.fainted ? 0.35 : 1,
+              border: isActive ? "1px solid var(--accent)" : "1px solid transparent",
+              cursor: clickable ? "pointer" : "default",
+              transition: "all 0.15s",
+            }}
+          >
+            <img
+              src={showPokeball ? POKEBALL : p.spriteFront}
+              alt={showPokeball ? "?" : p.name}
+              style={{
+                width: 48,
+                height: 48,
+                imageRendering: showPokeball ? "auto" : ("pixelated" as any),
+                filter: p.fainted ? "grayscale(1)" : undefined,
+                opacity: showPokeball ? 0.7 : 1,
+              }}
+            />
+            <div style={{ fontSize: "0.7rem", textTransform: "capitalize", color: showPokeball ? "var(--muted)" : "inherit" }}>
+              {showPokeball ? "???" : p.name}
             </div>
-          )}
-        </div>
-      ))}
+            {!isRival && (
+              <div style={{ fontSize: "0.65rem", color: p.fainted ? "var(--red)" : "var(--muted)" }}>
+                {p.fainted ? "Debilitado" : `${p.currentHp}/${p.maxHp}`}
+              </div>
+            )}
+            {isRival && p.fainted && (
+              <div style={{ fontSize: "0.65rem", color: "var(--red)" }}>Debilitado</div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

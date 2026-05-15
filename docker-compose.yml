@@ -39,6 +39,7 @@ services:
     volumes:
       - ./apps/frontend/src:/app/apps/frontend/src
       - ./apps/frontend/app.config.ts:/app/apps/frontend/app.config.ts
+      - ./apps/frontend/public:/app/apps/frontend/public:ro
 
 volumes:
   mongo-data:

@@ -1,6 +1,14 @@
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 
 export function CoinFlip({ winnerName }: { winnerName: string }) {
+  useEffect(() => {
+    const sfx = new Audio("/sfx/coinflip.mp3");
+    sfx.volume = 0.7;
+    sfx.play().catch(() => {});
+    return () => { sfx.pause(); sfx.src = ""; };
+  }, []);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1.5rem", padding: "3rem" }}>
       <motion.div
