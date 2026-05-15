@@ -23,41 +23,43 @@ Datos en vivo desde **PokéAPI**, persistidos en **MongoDB**, motor de batalla s
 
 ## 🚀 Cómo correr
 
-### Opción A — Docker Compose (recomendada para demo)
+### Primera vez (build de imágenes)
 
 ```bash
-docker compose up --build
+docker compose up --build -d
 ```
 
-Una vez todo arriba:
-1. Sembrar la base de datos (primera vez):
-   ```bash
-   docker compose exec backend bun src/seed/pokeapi.ts
-   ```
-2. Abrir dos navegadores en `http://localhost:3000`.
-3. En el primero: **Crear sala** → copia el código.
-4. En el segundo: **Unirse** con ese código.
-
-### Opción B — Local (desarrollo)
-
-Requiere: **Bun ≥ 1.1**, **pnpm ≥ 9**, **MongoDB** local (o un contenedor Mongo).
-
+Luego sembrar la base de datos (solo una vez, tarda unos minutos):
 ```bash
-# 1. Instalar dependencias (NUNCA usar npm)
-pnpm install
-
-# 2. Levantar MongoDB
-docker run -d -p 27017:27017 --name pbr-mongo mongo:7
-
-# 3. Sembrar la base (300+ pokémon, tipos, moves)
-pnpm seed
-
-# 4. Backend (puerto 3001)
-pnpm backend:dev
-
-# 5. Frontend en otra terminal (puerto 3000)
-pnpm frontend:dev
+docker compose exec backend bun src/seed/pokeapi.ts
 ```
+
+### Arranque diario
+
+Requisito: **Docker Desktop** corriendo.
+
+Si tenés MongoDB instalado nativamente en Windows, detenerlo primero (en una terminal con permisos de administrador):
+```
+net stop MongoDB
+```
+
+Luego, desde la carpeta del proyecto:
+```bash
+docker compose up --no-build -d
+```
+
+Abrir `http://localhost:3000` en el navegador.
+
+Para apagar:
+```bash
+docker compose down
+```
+
+### Hot-reload en desarrollo
+
+Los volúmenes ya están configurados en `docker-compose.yml`. Los cambios en `apps/frontend/src/` y `apps/backend/src/` se reflejan automáticamente sin rebuild.
+
+Solo necesitás hacer `docker compose build` si modificás `package.json`, `app.config.ts` o algún `Dockerfile`.
 
 ---
 
@@ -208,7 +210,7 @@ El script `apps/backend/src/seed/pokeapi.ts`:
 
 ## 🎬 Demo recomendada
 
-1. `docker compose up --build`
+1. `docker compose up --build -d` (primera vez) o `docker compose up --no-build -d`
 2. Sembrar BD (solo primera vez): `docker compose exec backend bun src/seed/pokeapi.ts`
 3. Abrir 2 navegadores en `http://localhost:3000`
 4. P1: Crear sala → copia código
