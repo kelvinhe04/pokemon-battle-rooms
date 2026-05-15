@@ -155,12 +155,32 @@ function RoomPage() {
       <div className="container">
         <Header code={code} phase={`Fase de Ban — ${myBans.length}/3`} />
         <div className="card" style={{ marginTop: "1rem" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem", alignItems: "center" }}>
-            <div>
-              <strong>{myTurn ? "Tu turno de banear" : `Esperando a ${opp?.name}...`}</strong>
-              <p className="muted">Cada jugador banea 3 Pokémon en alternancia</p>
+          <div style={{
+            textAlign: "center",
+            padding: "1rem 1rem 1.25rem",
+            marginBottom: "1rem",
+            borderRadius: "0.5rem",
+            background: myTurn ? "rgba(255, 200, 0, 0.1)" : "rgba(255,255,255,0.04)",
+            border: myTurn ? "1px solid rgba(255, 200, 0, 0.35)" : "1px solid rgba(255,255,255,0.08)",
+            position: "relative",
+          }}>
+            <div style={{
+              fontSize: "1.4rem",
+              fontWeight: 800,
+              color: myTurn ? "var(--yellow, #ffc800)" : "var(--muted, #aaa)",
+              letterSpacing: "0.01em",
+              marginBottom: "0.25rem",
+            }}>
+              {myTurn ? "⚔️ ¡Tu turno de banear!" : `⏳ Turno de ${opp?.name}...`}
             </div>
-            {myTurn && <Countdown seconds={20} />}
+            <p className="muted" style={{ margin: 0, fontSize: "0.85rem" }}>
+              Cada jugador banea 3 Pokémon en alternancia
+            </p>
+            {myTurn && (
+              <div style={{ position: "absolute", top: "1rem", right: "1rem" }}>
+                <Countdown seconds={20} />
+              </div>
+            )}
           </div>
           <PokedexPicker
             bannedIds={allBans}
